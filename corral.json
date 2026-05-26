@@ -1,0 +1,12 @@
+{
+  "packages": [ "tz" ],
+  "deps": [],
+  "info": {
+    "description": "Timezone and Calendaring Package",
+    "homepage": "https://tz.contact.red/",
+    "license": "",
+    "documentation_url": "",
+    "version": "",
+    "name": ""
+  }
+}
