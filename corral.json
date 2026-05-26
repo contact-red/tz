@@ -1,12 +1,14 @@
 {
-  "packages": [ "tz" ],
+  "packages": [
+    "tz"
+  ],
   "deps": [],
   "info": {
-    "description": "Timezone and Calendaring Package",
+    "description": "Timezone and calendaring package for Pony",
     "homepage": "https://tz.contact.red/",
     "license": "",
-    "documentation_url": "",
-    "version": "",
+    "documentation_url": "https://tz.contact.red",
+    "version": "0.1.0",
     "name": ""
   }
 }
