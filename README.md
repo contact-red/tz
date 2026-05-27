@@ -44,4 +44,4 @@ make clean   # remove the build directory
 
 ## Documentation
 
-https://tz.contact.red/
+[https://tz.contact.red/](https://tz.contact.red)
