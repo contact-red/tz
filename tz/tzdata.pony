@@ -211,28 +211,6 @@ primitive _TzData
       buf
     end
 
-  // fun next_transition(zone_name: String val, after_sec: I64)
-  //   : (I64 | NoMoreTransitions) ?
-  // =>
-  //   // TODO: codegen'd dispatch
-  //   NoMoreTransitions
-
-  // fun canonicalize(name: String val): (String val | TzLookupError) =>
-  //   // TODO: resolve IANA Link entries
-  //   ZoneNotFound
-
-  // fun data_version(): String val =>
-  //   // TODO: codegen-emitted constant
-  //   "tzdata-unknown"
-
-
-primitive NoMoreTransitions
-  """
-  Zone has no transitions after the requested instant (or no
-  transitions at all).
-  """
-
-
 // Lookup-error vocabulary. Smaller than the prior TzLookupError because
 // there are no filesystem operations (no SystemTzProvider) and no
 // distinct providers to disambiguate.

@@ -73,26 +73,3 @@ primitive Offset
   """
 
 type ZonedKind is (Zone | Offset)
-
-
-// DST resolution policy and error variants.
-
-primitive ResolveStrict
-  """DST gaps and overlaps are errors (LocalGap, LocalAmbiguous)."""
-primitive ResolveEarliest
-  """On overlap, pick the earlier UTC instant (pre-transition offset)."""
-primitive ResolveLatest
-  """On overlap, pick the later UTC instant (post-transition offset)."""
-primitive ResolveNextValid
-  """On gap, advance to the first valid local instant after the gap."""
-
-type LocalResolution is
-  (ResolveStrict | ResolveEarliest | ResolveLatest | ResolveNextValid)
-
-
-primitive LocalGap
-  """Spring-forward gap and policy refused to advance."""
-primitive LocalAmbiguous
-  """Fall-back overlap and policy refused to pick."""
-
-type ResolveError is (LocalGap | LocalAmbiguous)

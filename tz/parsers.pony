@@ -532,46 +532,4 @@ class ref _ParseState
 primitive ParseMalformed
   """Input doesn't match the expected grammar at all."""
 
-class val ParseInvalidDate
-  """Right shape but Y/M/D values aren't a valid date (e.g. Feb 30)."""
-  let _at_byte: USize
-  new val create(at_byte': USize) => _at_byte = at_byte'
-  fun val at_byte(): USize => _at_byte
-
-class val ParseInvalidTime
-  """Right shape but H/M/S values out of range."""
-  let _at_byte: USize
-  new val create(at_byte': USize) => _at_byte = at_byte'
-  fun val at_byte(): USize => _at_byte
-
-class val ParseInvalidOffset
-  """Offset suffix malformed or out of -23:59..+23:59."""
-  let _at_byte: USize
-  new val create(at_byte': USize) => _at_byte = at_byte'
-  fun val at_byte(): USize => _at_byte
-
-class val ParseInvalidFractional
-  """Fractional-seconds part malformed."""
-  let _at_byte: USize
-  new val create(at_byte': USize) => _at_byte = at_byte'
-  fun val at_byte(): USize => _at_byte
-
-primitive ParseUnexpectedEnd
-  """Input ended before parser had what it needed."""
-
-primitive ParseTrailingGarbage
-  """Extra data after a valid timestamp."""
-
-primitive ParseZoneNotFound
-  """ISO 8601 lenient: fallback zone name isn't in the bundled tzdata."""
-
-type ParseError is
-  ( ParseMalformed
-  | ParseInvalidDate
-  | ParseInvalidTime
-  | ParseInvalidOffset
-  | ParseInvalidFractional
-  | ParseUnexpectedEnd
-  | ParseTrailingGarbage
-  | ParseZoneNotFound
-  )
+type ParseError is ParseMalformed
