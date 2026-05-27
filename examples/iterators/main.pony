@@ -126,8 +126,8 @@ actor Main
     var i: USize = 0
     for result in iter do
       if (i >= n) then break end
-      match result
-      | let zdt: ZonedDateTime =>
+      match consume result
+      | let zdt: ZonedDateTime iso =>
         env.out.print("  " + (i + 1).string() + ". " + zdt.string())
         i = i + 1
       | NextFireBudgetExhausted =>
