@@ -64,16 +64,16 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
 
   fun ref next(): (ZonedDateTime iso^ | NextFireError) =>
     match _state
-    | let s: _WeekdayIterStart => _emit(_begin(s.after_posix()))
-    | let c: _WeekdayIterCursor => _emit(_advance(c.cursor_date(), c.lower()))
+    | let s: _WeekdayIterStart => _emit(_begin(s.after_posix))
+    | let c: _WeekdayIterCursor => _emit(_advance(c.cursor_date, c.lower))
     | let stuck: _WeekdayIterStuck =>
-      let e = stuck.err()
+      let e = stuck.err
       _state = _WeekdayIterDone
       e
     | _WeekdayIterDone =>
       // Caller didn't honor the has_next() contract. Degrade
       // gracefully rather than crash.
-      NextFireBudgetExhausted
+      NextFireError
     end
 
   fun ref _emit(posix: ((I64, I64) | NextFireError))
@@ -84,7 +84,7 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
     error shape. Handles two state-transition cases:
 
     - POSIX returned: build the ZDT. If construction fails (tzdata
-      coverage edge), transition to Done and emit OutOfRange.
+      coverage edge), transition to Done and emit NextFireError.
     - Error returned: `_begin`/`_advance` already set `_state` to
       `_Stuck`. We surface that error now and move to `_Done`.
     """
@@ -94,7 +94,7 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
         recover iso ZonedDateTime.from_posix_in_zone((sec, nsec), _zone_name)? end
       else
         _state = _WeekdayIterDone
-        NextFireOutOfRange
+        NextFireError
       end
     | let err: NextFireError =>
       _state = _WeekdayIterDone
@@ -103,15 +103,15 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
 
   fun ref _begin(after_posix: (I64, I64)): ((I64, I64) | NextFireError) =>
     if _weekdays.size() == 0 then
-      _state = _WeekdayIterStuck(NextFireBudgetExhausted)
-      return NextFireBudgetExhausted
+      _state = _WeekdayIterStuck(NextFireError)
+      return NextFireError
     end
     let zdt =
       try
         ZonedDateTime.from_posix_in_zone(after_posix, _zone_name)?
       else
-        _state = _WeekdayIterStuck(NextFireZoneNotFound)
-        return NextFireZoneNotFound
+        _state = _WeekdayIterStuck(NextFireError)
+        return NextFireError
       end
     _advance(zdt.local_date(), after_posix)
 
@@ -131,7 +131,7 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
               match cur.add_days(1)
               | let d: Date val => d
               | let _: ArithmeticError =>
-                _state = _WeekdayIterStuck(NextFireOutOfRange)
+                _state = _WeekdayIterStuck(NextFireError)
                 return fire   // emit this fire; error queued for next call
               end
             _state = _WeekdayIterCursor(next_cur, fire)
@@ -145,15 +145,15 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
       match cur.add_days(1)
       | let d: Date val => cur = d
       | let _: ArithmeticError =>
-        _state = _WeekdayIterStuck(NextFireOutOfRange)
-        return NextFireOutOfRange
+        _state = _WeekdayIterStuck(NextFireError)
+        return NextFireError
       end
       i = i + 1
     end
-    _state = _WeekdayIterStuck(NextFireBudgetExhausted)
-    NextFireBudgetExhausted
+    _state = _WeekdayIterStuck(NextFireError)
+    NextFireError
 
-  fun box _weekday_in_set(d: DayOfWeek): Bool =>
+  fun _weekday_in_set(d: DayOfWeek): Bool =>
     """
     True if `d` is one of the weekdays this iterator fires on.
     """
@@ -164,24 +164,20 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
 
 
 class val _WeekdayIterStart
-  let _after_posix: (I64, I64)
-  new val create(p: (I64, I64)) => _after_posix = p
-  fun val after_posix(): (I64, I64) => _after_posix
+  let after_posix: (I64, I64)
+  new val create(p: (I64, I64)) => after_posix = p
 
 class val _WeekdayIterCursor
-  let _cursor_date: Date val
-  let _lower: (I64, I64)
+  let cursor_date: Date val
+  let lower: (I64, I64)
   new val create(d: Date val, l: (I64, I64)) =>
-    _cursor_date = d
-    _lower = l
-  fun val cursor_date(): Date val => _cursor_date
-  fun val lower(): (I64, I64) => _lower
+    cursor_date = d
+    lower = l
 
 class val _WeekdayIterStuck
   """Internal: error queued, to be emitted on the next `next()` call."""
-  let _err: NextFireError
-  new val create(e: NextFireError) => _err = e
-  fun val err(): NextFireError => _err
+  let err: NextFireError
+  new val create(e: NextFireError) => err = e
 
 primitive _WeekdayIterDone
   """Internal: error has been emitted; the iterator is exhausted."""

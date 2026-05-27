@@ -56,13 +56,13 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
 
   fun ref next(): (ZonedDateTime iso^ | NextFireError) =>
     match _state
-    | let s: _MonthlyIterStart => _emit(_begin(s.after_posix()))
-    | let c: _MonthlyIterCursor => _emit(_advance(c.cursor(), c.lower()))
+    | let s: _MonthlyIterStart => _emit(_begin(s.after_posix))
+    | let c: _MonthlyIterCursor => _emit(_advance(c.cursor, c.lower))
     | let stuck: _MonthlyIterStuck =>
-      let e = stuck.err()
+      let e = stuck.err
       _state = _MonthlyIterDone
       e
-    | _MonthlyIterDone => NextFireBudgetExhausted
+    | _MonthlyIterDone => NextFireError
     end
 
   fun ref _emit(posix: ((I64, I64) | NextFireError))
@@ -74,7 +74,7 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
         recover iso ZonedDateTime.from_posix_in_zone((sec, nsec), _zone_name)? end
       else
         _state = _MonthlyIterDone
-        NextFireOutOfRange
+        NextFireError
       end
     | let err: NextFireError =>
       _state = _MonthlyIterDone
@@ -86,8 +86,8 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
       try
         ZonedDateTime.from_posix_in_zone(after_posix, _zone_name)?
       else
-        _state = _MonthlyIterStuck(NextFireZoneNotFound)
-        return NextFireZoneNotFound
+        _state = _MonthlyIterStuck(NextFireError)
+        return NextFireError
       end
     _advance(zdt.local_date(), after_posix)
 
@@ -107,8 +107,8 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
       let candidate_date =
         try _resolve_anchor(cur.year(), cur.month())?
         else
-          _state = _MonthlyIterStuck(NextFireOutOfRange)
-          return NextFireOutOfRange
+          _state = _MonthlyIterStuck(NextFireError)
+          return NextFireError
         end
       match _RecurrenceMath.local_to_utc_in_zone(
         candidate_date, _target_tod, _zone_name)
@@ -121,7 +121,7 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
             match cur.add_months(1, OverflowClamp)
             | let d: Date val => d
             | let _: ArithmeticError =>
-              _state = _MonthlyIterStuck(NextFireOutOfRange)
+              _state = _MonthlyIterStuck(NextFireError)
               return fire   // emit this fire; error queued for next call
             end
           _state = _MonthlyIterCursor(next_cur, fire)
@@ -135,15 +135,15 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
       match cur.add_months(1, OverflowClamp)
       | let d: Date val => cur = d
       | let _: ArithmeticError =>
-        _state = _MonthlyIterStuck(NextFireOutOfRange)
-        return NextFireOutOfRange
+        _state = _MonthlyIterStuck(NextFireError)
+        return NextFireError
       end
       i = i + 1
     end
-    _state = _MonthlyIterStuck(NextFireBudgetExhausted)
-    NextFireBudgetExhausted
+    _state = _MonthlyIterStuck(NextFireError)
+    NextFireError
 
-  fun box _resolve_anchor(year: I16, month: U8): Date val ? =>
+  fun _resolve_anchor(year: I16, month: U8): Date val ? =>
     """
     Compute the actual calendar date for this iterator's anchor in
     the given year/month. Clamps `DayOfMonth(N)` to month length;
@@ -170,24 +170,20 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
 
 
 class val _MonthlyIterStart
-  let _after_posix: (I64, I64)
-  new val create(p: (I64, I64)) => _after_posix = p
-  fun val after_posix(): (I64, I64) => _after_posix
+  let after_posix: (I64, I64)
+  new val create(p: (I64, I64)) => after_posix = p
 
 class val _MonthlyIterCursor
-  let _cursor: Date val
-  let _lower: (I64, I64)
+  let cursor: Date val
+  let lower: (I64, I64)
   new val create(c: Date val, l: (I64, I64)) =>
-    _cursor = c
-    _lower = l
-  fun val cursor(): Date val => _cursor
-  fun val lower(): (I64, I64) => _lower
+    cursor = c
+    lower = l
 
 class val _MonthlyIterStuck
   """Internal: error queued, to be emitted on the next `next()` call."""
-  let _err: NextFireError
-  new val create(e: NextFireError) => _err = e
-  fun val err(): NextFireError => _err
+  let err: NextFireError
+  new val create(e: NextFireError) => err = e
 
 primitive _MonthlyIterDone
   """Internal: error has been emitted; the iterator is exhausted."""

@@ -97,7 +97,7 @@ actor Main
 
     IntervalRecurrence currently requires a pure-intraday Period
     (no months or days). A calendar-mixed Period sticks immediately
-    on `NextFireBudgetExhausted` — we demonstrate that error path
+    on `NextFireError` — we demonstrate that error path
     afterward so the sticky-error shape is visible.
     """
     env.out.print("== IntervalIter: every 90 minutes ==")
@@ -130,11 +130,7 @@ actor Main
       | let zdt: ZonedDateTime iso =>
         env.out.print("  " + (i + 1).string() + ". " + zdt.string())
         i = i + 1
-      | NextFireBudgetExhausted =>
-        env.out.print("  stopped: budget exhausted")
-      | NextFireOutOfRange =>
-        env.out.print("  stopped: out of representable date range")
-      | NextFireZoneNotFound =>
-        env.out.print("  stopped: zone not found")
+      | NextFireError =>
+        env.out.print("  stopped: iterator can't produce more fires")
       end
     end

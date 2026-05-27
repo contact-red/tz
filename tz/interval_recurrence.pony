@@ -26,7 +26,7 @@ class val IntervalRecurrence
     Build an iterator that yields successive fire instants. Each call
     advances by `every()`. Pure-intraday Periods (months == 0 &&
     days == 0) work today; calendar-mixed Periods produce a sticky
-    `NextFireBudgetExhausted` until local-time arithmetic lands.
+    `NextFireError` until local-time arithmetic lands.
     """
     IntervalIter(this, after)
 
@@ -55,13 +55,13 @@ class ref IntervalIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
 
   fun ref next(): (ZonedDateTime iso^ | NextFireError) =>
     match _state
-    | let s: _IntervalIterStart => _emit(_begin(s.after_posix()))
-    | let c: _IntervalIterCursor => _emit(_step(c.last_fire()))
+    | let s: _IntervalIterStart => _emit(_begin(s.after_posix))
+    | let c: _IntervalIterCursor => _emit(_step(c.last_fire))
     | let stuck: _IntervalIterStuck =>
-      let e = stuck.err()
+      let e = stuck.err
       _state = _IntervalIterDone
       e
-    | _IntervalIterDone => NextFireBudgetExhausted
+    | _IntervalIterDone => NextFireError
     end
 
   fun ref _emit(posix: ((I64, I64) | NextFireError))
@@ -73,7 +73,7 @@ class ref IntervalIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
         recover iso ZonedDateTime.from_posix_in_zone((sec, nsec), _zone_name)? end
       else
         _state = _IntervalIterDone
-        NextFireOutOfRange
+        NextFireError
       end
     | let err: NextFireError =>
       _state = _IntervalIterDone
@@ -86,17 +86,17 @@ class ref IntervalIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
     try
       ZonedDateTime.from_posix_in_zone(after_posix, _zone_name)?
     else
-      _state = _IntervalIterStuck(NextFireZoneNotFound)
-      return NextFireZoneNotFound
+      _state = _IntervalIterStuck(NextFireError)
+      return NextFireError
     end
     if (_period.months() != 0) or (_period.days() != 0) then
       // TODO: calendar-mixed intervals need local-time arithmetic.
-      _state = _IntervalIterStuck(NextFireBudgetExhausted)
-      return NextFireBudgetExhausted
+      _state = _IntervalIterStuck(NextFireError)
+      return NextFireError
     end
     if _period.nanos() <= 0 then
-      _state = _IntervalIterStuck(NextFireBudgetExhausted)
-      return NextFireBudgetExhausted
+      _state = _IntervalIterStuck(NextFireError)
+      return NextFireError
     end
     _step(after_posix)
 
@@ -117,20 +117,17 @@ class ref IntervalIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
 
 
 class val _IntervalIterStart
-  let _after_posix: (I64, I64)
-  new val create(p: (I64, I64)) => _after_posix = p
-  fun val after_posix(): (I64, I64) => _after_posix
+  let after_posix: (I64, I64)
+  new val create(p: (I64, I64)) => after_posix = p
 
 class val _IntervalIterCursor
-  let _last_fire: (I64, I64)
-  new val create(p: (I64, I64)) => _last_fire = p
-  fun val last_fire(): (I64, I64) => _last_fire
+  let last_fire: (I64, I64)
+  new val create(p: (I64, I64)) => last_fire = p
 
 class val _IntervalIterStuck
   """Internal: error queued, to be emitted on the next `next()` call."""
-  let _err: NextFireError
-  new val create(e: NextFireError) => _err = e
-  fun val err(): NextFireError => _err
+  let err: NextFireError
+  new val create(e: NextFireError) => err = e
 
 primitive _IntervalIterDone
   """Internal: error has been emitted; the iterator is exhausted."""

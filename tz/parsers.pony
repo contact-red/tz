@@ -33,20 +33,20 @@ primitive Rfc3339
   See: https://datatracker.ietf.org/doc/html/rfc3339
   """
 
-  fun parse(s: String val): (ZonedDateTime iso^ | ParseError) =>
+  fun parse(s: String val): (ZonedDateTime iso^ | ParseMalformed) =>
     """
     Parse an RFC 3339 timestamp into a fresh ZonedDateTime in Offset
-    mode (RFC 3339 carries offset, not zone). Returns ParseError on
+    mode (RFC 3339 carries offset, not zone). Returns ParseMalformed on
     malformed input.
     """
     match _parse_components(s, false)
-    | let e: ParseError => e
+    | let e: ParseMalformed => e
     | (let sec: I64, let nsec: I64, let off: I32) =>
       recover iso ZonedDateTime.from_posix_at_offset((sec, nsec), off) end
     end
 
   fun parse_in_place(s: String val, zdt: ZonedDateTime)
-    : (None | ParseError)
+    : (None | ParseMalformed)
   =>
     """
     Parse an RFC 3339 timestamp, mutating `zdt` to represent the
@@ -54,7 +54,7 @@ primitive Rfc3339
     on error.
     """
     match _parse_components(s, false)
-    | let e: ParseError => e
+    | let e: ParseMalformed => e
     | (let sec: I64, let nsec: I64, let off: I32) =>
       zdt.reset_at_offset((sec, nsec), off)
       None
@@ -70,7 +70,7 @@ primitive Rfc3339
     buf.append(consume s)
 
   fun _parse_components(s: String val, lenient: Bool)
-    : ((I64, I64, I32) | ParseError)
+    : ((I64, I64, I32) | ParseMalformed)
   =>
     """
     Internal: parse to (utc_sec, nsec, offset_sec). When `lenient` is
@@ -167,7 +167,7 @@ primitive Iso8601
   """
 
   fun parse(s: String val, fallback_zone_name: String val)
-    : (ZonedDateTime iso^ | ParseError)
+    : (ZonedDateTime iso^ | ParseMalformed)
   =>
     """
     Parse an ISO 8601 timestamp. If the input carries an offset,
@@ -177,13 +177,13 @@ primitive Iso8601
     zone via `_TzData`.
     """
     match _parse_or_fallback(s, fallback_zone_name)
-    | let e: ParseError => e
+    | let e: ParseMalformed => e
     | let zdt: ZonedDateTime iso => consume zdt
     end
 
   fun parse_in_place(
     s: String val, fallback_zone_name: String val, zdt: ZonedDateTime)
-    : (None | ParseError)
+    : (None | ParseMalformed)
   =>
     """
     Lenient parse, mutating `zdt`. See `parse` for semantics.
@@ -193,7 +193,7 @@ primitive Iso8601
     // doesn't, that's the fallback-zone path which is currently
     // restricted to "UTC" until codegen lands.
     match Rfc3339._parse_components(s, true)
-    | let e: ParseError =>
+    | let e: ParseMalformed =>
       // TODO: offset-less inputs aren't supported in v1; they'd need
       // a separate grammar branch + _TzData resolution via
       // fallback_zone_name. Surface as ParseMalformed for now.
@@ -212,10 +212,10 @@ primitive Iso8601
     buf.append(consume s)
 
   fun _parse_or_fallback(s: String val, fallback_zone_name: String val)
-    : (ZonedDateTime iso^ | ParseError)
+    : (ZonedDateTime iso^ | ParseMalformed)
   =>
     match Rfc3339._parse_components(s, true)
-    | let e: ParseError => e
+    | let e: ParseMalformed => e
     | (let sec: I64, let nsec: I64, let off: I32) =>
       recover iso ZonedDateTime.from_posix_at_offset((sec, nsec), off) end
     end
@@ -245,18 +245,18 @@ primitive Rfc2822
   offset (`+0000` for UTC, never `GMT`/`UT`).
   """
 
-  fun parse(s: String val): (ZonedDateTime iso^ | ParseError) =>
+  fun parse(s: String val): (ZonedDateTime iso^ | ParseMalformed) =>
     match _parse_components(s)
-    | let e: ParseError => e
+    | let e: ParseMalformed => e
     | (let sec: I64, let nsec: I64, let off: I32) =>
       recover iso ZonedDateTime.from_posix_at_offset((sec, nsec), off) end
     end
 
   fun parse_in_place(s: String val, zdt: ZonedDateTime)
-    : (None | ParseError)
+    : (None | ParseMalformed)
   =>
     match _parse_components(s)
-    | let e: ParseError => e
+    | let e: ParseMalformed => e
     | (let sec: I64, let nsec: I64, let off: I32) =>
       zdt.reset_at_offset((sec, nsec), off)
       None
@@ -309,7 +309,7 @@ primitive Rfc2822
     let s = format(zdt)
     buf.append(consume s)
 
-  fun _parse_components(s: String val): ((I64, I64, I32) | ParseError) =>
+  fun _parse_components(s: String val): ((I64, I64, I32) | ParseMalformed) =>
     let p = _ParseState(s)
     try
       _maybe_consume_dow(p)?
@@ -500,9 +500,9 @@ class ref _ParseState
     _s = s
     _i = 0
 
-  fun box eof(): Bool => _i >= _s.size()
+  fun eof(): Bool => _i >= _s.size()
 
-  fun box peek(): U8 ? =>
+  fun peek(): U8 ? =>
     _s(_i)?
 
   fun ref byte(): U8 ? =>
@@ -531,5 +531,3 @@ class ref _ParseState
 
 primitive ParseMalformed
   """Input doesn't match the expected grammar at all."""
-
-type ParseError is ParseMalformed

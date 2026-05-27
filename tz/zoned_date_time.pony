@@ -174,7 +174,7 @@ class ZonedDateTime
     | let e: TzLookupError => e
     end
 
-  fun box to_timezone(name: String val): (ZonedDateTime iso^ | TzLookupError) =>
+  fun to_timezone(name: String val): (ZonedDateTime iso^ | TzLookupError) =>
     """
     Return a NEW ZonedDateTime representing the same UTC instant in a
     different IANA zone. Allocates one heap object on success.
@@ -187,7 +187,7 @@ class ZonedDateTime
     | let e: TzLookupError => e
     end
 
-  fun box clone(): ZonedDateTime iso^ =>
+  fun clone(): ZonedDateTime iso^ =>
     """
     Return a fresh ZonedDateTime with the same state as this one — same
     instant, same zone (or offset), same resolved Observation. Skips
@@ -207,18 +207,18 @@ class ZonedDateTime
 
   // Accessors.
 
-  fun box to_posix(): (I64, I64) => (_sec, _nsec)
-  fun box kind(): ZonedKind => _kind
-  fun box zone_name(): String val => _zone_name
-  fun box local_date(): Date val => _observation.local_date()
-  fun box local_tod(): TimeOfDay val => _observation.local_tod()
-  fun box offset_sec(): I32 => _observation.offset_sec()
-  fun box abbreviation(): String val => _observation.abbreviation()
-  fun box is_dst(): Bool => _observation.is_dst()
+  fun to_posix(): (I64, I64) => (_sec, _nsec)
+  fun kind(): ZonedKind => _kind
+  fun zone_name(): String val => _zone_name
+  fun local_date(): Date val => _observation.local_date()
+  fun local_tod(): TimeOfDay val => _observation.local_tod()
+  fun offset_sec(): I32 => _observation.offset_sec()
+  fun abbreviation(): String val => _observation.abbreviation()
+  fun is_dst(): Bool => _observation.is_dst()
 
   // Formatting.
 
-  fun box string(): String iso^ =>
+  fun string(): String iso^ =>
     """
     RFC 3339 / ISO 8601 representation of this ZonedDateTime.
     Format: `YYYY-MM-DDTHH:MM:SS[.nnnnnnnnn][Z|±HH:MM]`
