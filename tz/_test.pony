@@ -1330,7 +1330,7 @@ class iso _TestCronWeekdaySameDayAhead is UnitTest
     let after = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 25, 8, 0, 0)?, 0))
     let expected = _DateTimeMath.utc_posix_sec(2026, 5, 25, 9, 0, 0)?
-    match Cron.next_weekday(r, after)
+    match r.iter_after(after).next()
     | let zdt: ZonedDateTime =>
       (let s: I64, let n: I64) = zdt.to_posix()
       h.assert_eq[I64](expected, s, "same-day fire sec")
@@ -1350,7 +1350,7 @@ class iso _TestCronWeekdaySameDayPast is UnitTest
     let after = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 25, 10, 0, 0)?, 0))
     let expected = _DateTimeMath.utc_posix_sec(2026, 6, 1, 9, 0, 0)?
-    match Cron.next_weekday(r, after)
+    match r.iter_after(after).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected, zdt.to_posix()._1, "next-Mon sec")
     | let _: NextFireError => h.fail("expected fire")
@@ -1368,7 +1368,7 @@ class iso _TestCronWeekdayAcrossWeek is UnitTest
     let after = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 22, 12, 0, 0)?, 0))
     let expected = _DateTimeMath.utc_posix_sec(2026, 5, 25, 9, 0, 0)?
-    match Cron.next_weekday(r, after)
+    match r.iter_after(after).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected, zdt.to_posix()._1, "Mon after Fri")
     | let _: NextFireError => h.fail("expected fire")
@@ -1386,7 +1386,7 @@ class iso _TestCronWeekdayWeekdaySet is UnitTest
     let after_sat = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 23, 10, 0, 0)?, 0))
     let expected_mon = _DateTimeMath.utc_posix_sec(2026, 5, 25, 9, 0, 0)?
-    match Cron.next_weekday(r, after_sat)
+    match r.iter_after(after_sat).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_mon, zdt.to_posix()._1, "Sat → Mon")
     | let _: NextFireError => h.fail("expected fire")
@@ -1396,7 +1396,7 @@ class iso _TestCronWeekdayWeekdaySet is UnitTest
     let after_fri_morn = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 22, 8, 0, 0)?, 0))
     let expected_fri = _DateTimeMath.utc_posix_sec(2026, 5, 22, 9, 0, 0)?
-    match Cron.next_weekday(r, after_fri_morn)
+    match r.iter_after(after_fri_morn).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_fri, zdt.to_posix()._1, "Fri 08 → Fri 09")
     | let _: NextFireError => h.fail("expected fire")
@@ -1410,7 +1410,7 @@ class iso _TestCronWeekdayEmpty is UnitTest
       recover val Array[DayOfWeek] end,
       TimeOfDay(9, 0, 0)?,
       "UTC")
-    match Cron.next_weekday(r, ZonedDateTime.from_posix((0, 0)))
+    match r.iter_after(ZonedDateTime.from_posix((0, 0))).next()
     | let _: ZonedDateTime => h.fail("expected NextFireBudgetExhausted")
     | NextFireBudgetExhausted => None  // Expected.
     | let _: NextFireError => h.fail("wrong variant")
@@ -1425,7 +1425,7 @@ class iso _TestCronMonthlyDayOfMonth is UnitTest
     let after_may10 = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 10, 0, 0, 0)?, 0))
     let expected_may15 = _DateTimeMath.utc_posix_sec(2026, 5, 15, 0, 0, 0)?
-    match Cron.next_monthly(r, after_may10)
+    match r.iter_after(after_may10).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_may15, zdt.to_posix()._1, "May 15")
     | let _: NextFireError => h.fail("expected fire")
@@ -1435,7 +1435,7 @@ class iso _TestCronMonthlyDayOfMonth is UnitTest
     let after_may16 = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 16, 0, 0, 0)?, 0))
     let expected_jun15 = _DateTimeMath.utc_posix_sec(2026, 6, 15, 0, 0, 0)?
-    match Cron.next_monthly(r, after_may16)
+    match r.iter_after(after_may16).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_jun15, zdt.to_posix()._1, "Jun 15")
     | let _: NextFireError => h.fail("expected fire")
@@ -1450,7 +1450,7 @@ class iso _TestCronMonthlyClamp is UnitTest
     let after_apr = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 4, 10, 0, 0, 0)?, 0))
     let expected_apr30 = _DateTimeMath.utc_posix_sec(2026, 4, 30, 0, 0, 0)?
-    match Cron.next_monthly(r, after_apr)
+    match r.iter_after(after_apr).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_apr30, zdt.to_posix()._1, "Apr 30")
     | let _: NextFireError => h.fail("expected fire")
@@ -1460,7 +1460,7 @@ class iso _TestCronMonthlyClamp is UnitTest
     let after_may = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 10, 0, 0, 0)?, 0))
     let expected_may31 = _DateTimeMath.utc_posix_sec(2026, 5, 31, 0, 0, 0)?
-    match Cron.next_monthly(r, after_may)
+    match r.iter_after(after_may).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_may31, zdt.to_posix()._1, "May 31")
     | let _: NextFireError => h.fail("expected fire")
@@ -1475,7 +1475,7 @@ class iso _TestCronMonthlyLastDay is UnitTest
     let after_feb26 = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 2, 10, 0, 0, 0)?, 0))
     let expected_feb28 = _DateTimeMath.utc_posix_sec(2026, 2, 28, 0, 0, 0)?
-    match Cron.next_monthly(r, after_feb26)
+    match r.iter_after(after_feb26).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_feb28, zdt.to_posix()._1, "Feb 28 2026")
     | let _: NextFireError => h.fail("expected fire")
@@ -1485,7 +1485,7 @@ class iso _TestCronMonthlyLastDay is UnitTest
     let after_feb24 = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2024, 2, 10, 0, 0, 0)?, 0))
     let expected_feb29 = _DateTimeMath.utc_posix_sec(2024, 2, 29, 0, 0, 0)?
-    match Cron.next_monthly(r, after_feb24)
+    match r.iter_after(after_feb24).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_feb29, zdt.to_posix()._1, "Feb 29 2024")
     | let _: NextFireError => h.fail("expected fire")
@@ -1503,7 +1503,7 @@ class iso _TestCronMonthlyLastWeekday is UnitTest
     let after_may10 = ZonedDateTime.from_posix(
       (_DateTimeMath.utc_posix_sec(2026, 5, 10, 0, 0, 0)?, 0))
     let expected_may29 = _DateTimeMath.utc_posix_sec(2026, 5, 29, 0, 0, 0)?
-    match Cron.next_monthly(r, after_may10)
+    match r.iter_after(after_may10).next()
     | let zdt: ZonedDateTime =>
       h.assert_eq[I64](expected_may29, zdt.to_posix()._1, "last Fri May")
     | let _: NextFireError => h.fail("expected fire")
@@ -1515,7 +1515,7 @@ class iso _TestCronIntervalIntraday is UnitTest
   fun apply(h: TestHelper) =>
     let r = IntervalRecurrence(Period.of_minutes(90), "UTC", OverflowClamp)
     // 90 minutes = 5400 seconds.
-    match Cron.next_interval(r, ZonedDateTime.from_posix((1000, 0)))
+    match r.iter_after(ZonedDateTime.from_posix((1000, 0))).next()
     | let zdt: ZonedDateTime =>
       (let s: I64, let n: I64) = zdt.to_posix()
       h.assert_eq[I64](6400, s, "90 min later")
@@ -1525,7 +1525,7 @@ class iso _TestCronIntervalIntraday is UnitTest
 
     // 1-second interval.
     let r1 = IntervalRecurrence(Period.of_seconds(1), "UTC", OverflowClamp)
-    match Cron.next_interval(r1, ZonedDateTime.from_posix((1000, 500_000_000)))
+    match r1.iter_after(ZonedDateTime.from_posix((1000, 500_000_000))).next()
     | let zdt: ZonedDateTime =>
       (let s: I64, let n: I64) = zdt.to_posix()
       h.assert_eq[I64](1001, s, "+1s sec")
@@ -1538,7 +1538,7 @@ class iso _TestCronIntervalCalendarUnsupported is UnitTest
   fun name(): String => "Cron/interval: calendar-mixed isn't supported in v1"
   fun apply(h: TestHelper) =>
     let r = IntervalRecurrence(Period.of_months(1), "UTC", OverflowClamp)
-    match Cron.next_interval(r, ZonedDateTime.from_posix((0, 0)))
+    match r.iter_after(ZonedDateTime.from_posix((0, 0))).next()
     | let _: ZonedDateTime =>
       h.fail("expected BudgetExhausted (not yet supported)")
     | NextFireBudgetExhausted => None  // Expected.
@@ -1552,7 +1552,7 @@ class iso _TestCronUnknownZone is UnitTest
     let weekdays = recover val [as DayOfWeek: Monday] end
     let tod = TimeOfDay(9, 0, 0)?
     let r = WeekdayRecurrence(weekdays, tod, "Atlantis/Lost")
-    match Cron.next_weekday(r, ZonedDateTime.from_posix((0, 0)))
+    match r.iter_after(ZonedDateTime.from_posix((0, 0))).next()
     | let _: ZonedDateTime => h.fail("expected ZoneNotFound")
     | NextFireZoneNotFound => None  // Expected.
     | let _: NextFireError => h.fail("wrong variant")

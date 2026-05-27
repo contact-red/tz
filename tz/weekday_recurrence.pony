@@ -121,11 +121,12 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
     var cur = start_date
     var i: USize = 0
     while i < 8 do
-      if Cron._is_weekday_in_set(cur.day_of_week(), _weekdays) then
-        match Cron._local_to_utc_in_zone(cur, _target_tod, _zone_name)
+      if _weekday_in_set(cur.day_of_week()) then
+        match _RecurrenceMath.local_to_utc_in_zone(
+          cur, _target_tod, _zone_name)
         | (let s: I64, let n: I64) =>
           let fire = (s, n)
-          if Cron._posix_gt(fire, lower) then
+          if _RecurrenceMath.posix_gt(fire, lower) then
             let next_cur =
               match cur.add_days(1)
               | let d: Date val => d
@@ -151,6 +152,15 @@ class ref WeekdayIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
     end
     _state = _WeekdayIterStuck(NextFireBudgetExhausted)
     NextFireBudgetExhausted
+
+  fun box _weekday_in_set(d: DayOfWeek): Bool =>
+    """
+    True if `d` is one of the weekdays this iterator fires on.
+    """
+    for entry in _weekdays.values() do
+      if d is entry then return true end
+    end
+    false
 
 
 class val _WeekdayIterStart

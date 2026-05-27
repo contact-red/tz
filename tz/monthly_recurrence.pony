@@ -105,15 +105,16 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
     var i: USize = 0
     while i < 13 do
       let candidate_date =
-        try Cron._resolve_anchor(_anchor, cur.year(), cur.month())?
+        try _resolve_anchor(cur.year(), cur.month())?
         else
           _state = _MonthlyIterStuck(NextFireOutOfRange)
           return NextFireOutOfRange
         end
-      match Cron._local_to_utc_in_zone(candidate_date, _target_tod, _zone_name)
+      match _RecurrenceMath.local_to_utc_in_zone(
+        candidate_date, _target_tod, _zone_name)
       | (let s: I64, let n: I64) =>
         let fire = (s, n)
-        if Cron._posix_gt(fire, lower) then
+        if _RecurrenceMath.posix_gt(fire, lower) then
           // Advance cursor one month past so the next call starts
           // resolving the following month.
           let next_cur =
@@ -141,6 +142,31 @@ class ref MonthlyIter is Iterator[(ZonedDateTime iso^ | NextFireError)]
     end
     _state = _MonthlyIterStuck(NextFireBudgetExhausted)
     NextFireBudgetExhausted
+
+  fun box _resolve_anchor(year: I16, month: U8): Date val ? =>
+    """
+    Compute the actual calendar date for this iterator's anchor in
+    the given year/month. Clamps `DayOfMonth(N)` to month length;
+    walks backward from end-of-month for `LastWeekdayOfMonth`.
+    """
+    match _anchor
+    | let dom: DayOfMonth =>
+      let max_day = _Gregorian.days_in_month(year, month)
+      let day = if dom.preferred() > max_day then max_day else dom.preferred() end
+      Date(year, month, day)?
+    | LastDayOfMonth =>
+      Date(year, month, _Gregorian.days_in_month(year, month))?
+    | let lwd: LastWeekdayOfMonth =>
+      let target = lwd.weekday()
+      var day: U8 = _Gregorian.days_in_month(year, month)
+      while day >= 1 do
+        let d = Date(year, month, day)?
+        if d.day_of_week() is target then return d end
+        day = day - 1
+      end
+      // Unreachable: every month has at least one of each weekday.
+      error
+    end
 
 
 class val _MonthlyIterStart
