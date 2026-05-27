@@ -24,7 +24,7 @@ should be expected until 1.0.
 Add it to your project with [corral](https://github.com/ponylang/corral):
 
 ```sh
-corral add github.com/contact-red/tz.git --version 0.1.0
+corral add github.com/contact-red/tz.git --version 0.1.1
 corral fetch
 ```
 
