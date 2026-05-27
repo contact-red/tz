@@ -1,9 +1,18 @@
 # tz
 
-A timezone and calendaring package for Pony. It reads IANA tzdata from the
-operating system and provides calendar primitives (`Date`, `TimeOfDay`,
-`Period`) plus zoned datetimes (`Zdt`) that convert between POSIX time and
-local wall-clock time across historical and present-day zone definitions.
+[“Sooner or later every programmer has to deal with time zones … and you really should never, ever deal with time zones if you can help it.”](https://www.youtube.com/watch?v=-5wpm-gesOY)
+
+A timezone and calendaring package for Pony. During packaging we incorporated
+the IANA database so the package has no reason to ask for any Object Capablility
+or C-FFI.
+
+See the [fine documentation](https://tz.contact.red/) for an overview of what
+functionality is and is not covered - as well as some of the "peculiarities"
+that comes with international TimeZones.
+
+Remember folks, "America/Chicago" ≠ "EST5EDT"(!) - Choose Wisely!
+
+This package *DOES* differenciate betwixt the two.
 
 ## Status
 
@@ -33,24 +42,6 @@ make docs    # generate documentation under build/tz-docs
 make clean   # remove the build directory
 ```
 
-The test binary is built into `build/debug/tz` (or `build/release/tz` with
-`config=release`).
+## Documentation
 
-## Zone data regeneration
-
-`tz/_zones_generated.pony` is generated from the system zoneinfo database
-under `/usr/share/zoneinfo`. Regenerate it with:
-
-```sh
-./regenerate-zones.sh
-```
-
-To check for drift between the committed file and a fresh regeneration:
-
-```sh
-./verify-zones.sh
-```
-
-## License
-
-TBD.
+https://tz.contact.red/
